@@ -10,7 +10,7 @@
 * **Mapper**: MapStruct
 * **Caching / Rate-limit**: Caffeine (local), Bucket4j (filtro) para protección básica
 * **Observabilidad**: Micrometer + Prometheus, OpenTelemetry OTLP, logs JSON (Logback) con `traceId`/`spanId`
-* **Testing**: JUnit 5, H2 en memoria, MockMvc, AssertJ, Mockito
+* **Testing**: JUnit 5, PostgreSQL (Testcontainers), MockMvc, AssertJ, Mockito
 * **Build**: Gradle (Kotlin DSL), Dockerfile multi-stage + Jib opcional
 
 ---
@@ -108,7 +108,7 @@ volumes:
 ## 🧪 Pruebas
 
 * **Unitarias**: servicios, mappers, validaciones
-* **Integración**: repos + seguridad con H2 en memoria
+* **Integración**: repos + seguridad con PostgreSQL (Testcontainers)
 * **E2E (contrato)**: WebTestClient contra contexto real y verificación OpenAPI
 * **Escenarios críticos**: login/logout, `/books/mine`, feed paginado, envío de contacto
 
@@ -136,7 +136,7 @@ volumes:
 * [ ] Flyway migrations aplicadas en CI + entorno
 * [ ] `CORS_ORIGINS` correcto y pruebas de navegador OK
 * [ ] Rate-limit y logs JSON verificados (con `X-Request-Id`)
-* [ ] Tests verdes (unit/integration/e2e) con H2 en memoria
+* [ ] Tests verdes (unit/integration/e2e) con PostgreSQL (Testcontainers)
 
 ---
 
@@ -159,4 +159,4 @@ volumes:
 
 ## 🧠 Decisiones (y qué descartamos)
 
-**Elegimos**: Spring Boot 3.x (Java 21), Security 6 con JWT + refresh cookie, Postgres + JPA/Flyway, OpenAPI springdoc, H2 para tests, Argon2id, Bucket4j y observabilidad OTel/Micrometer. **Descartamos**: NestJS/Node para este repo (duplicaba tipos y no cumple tu pedido de Spring), sesiones de servidor puras (preferimos JWT stateless + refresh cookie), y jOOQ por ahora (JPA suficiente en el MVP; jOOQ se evalúa para consultas complejas). **Criterio**: máxima seguridad/patrón actual de la industria, compatibilidad con tu FE y time-to-value rápido sin deuda innecesaria.
+**Elegimos**: Spring Boot 3.x (Java 21), Security 6 con JWT + refresh cookie, Postgres + JPA/Flyway, OpenAPI springdoc, PostgreSQL para tests (Testcontainers), Argon2id, Bucket4j y observabilidad OTel/Micrometer. **Descartamos**: NestJS/Node para este repo (duplicaba tipos y no cumple tu pedido de Spring), sesiones de servidor puras (preferimos JWT stateless + refresh cookie), y jOOQ por ahora (JPA suficiente en el MVP; jOOQ se evalúa para consultas complejas). **Criterio**: máxima seguridad/patrón actual de la industria, compatibilidad con tu FE y time-to-value rápido sin deuda innecesaria.

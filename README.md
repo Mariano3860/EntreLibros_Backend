@@ -6,7 +6,7 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
 
 - Java 21
 - Maven 3.9+
-- Docker (opcional, para ejecutar PostgreSQL)
+- Docker (requerido para pruebas y bases de datos mediante Testcontainers)
 
 ## Ejecutar en local
 
@@ -24,7 +24,7 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
    JWT_ACCESS_TTL=PT15M
    JWT_REFRESH_TTL=P14D
    ```
-3. Levanta PostgreSQL (opcional mediante Docker):
+3. Levanta PostgreSQL (por ejemplo con Docker):
    ```bash
    docker run --name entrelibros-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=entrelibros -p 5432:5432 -d postgres:16-alpine
    ```
@@ -40,7 +40,7 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
 
 ## Comandos útiles
 
-- Ejecutar pruebas: `mvn test`
+- Ejecutar pruebas (requiere Docker): `mvn test`
 - Compilar sin pruebas: `mvn -DskipTests package`
 - Ver dependencias: `mvn dependency:tree`
 
