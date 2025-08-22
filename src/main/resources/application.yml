@@ -1,0 +1,23 @@
+server:
+  port: 4000
+  servlet:
+    context-path: /api/v1
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/entrelibros
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+jwt:
+  secret: "01234567890123456789012345678901"
+  issuer: "https://entrelibros.app"
+  accessTtl: PT15M
