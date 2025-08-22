@@ -36,7 +36,7 @@ class AuthControllerTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("JWT_SECRET", () -> "test-secret");
+        registry.add("JWT_SECRET", () -> "test-secret-0123456789abcdef0123456789abcd");
     }
 
     @Autowired
