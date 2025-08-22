@@ -18,6 +18,6 @@ spring:
     enabled: true
 
 jwt:
-  secret: "01234567890123456789012345678901"
+  secret: ${JWT_SECRET}
   issuer: "https://entrelibros.app"
   accessTtl: PT15M

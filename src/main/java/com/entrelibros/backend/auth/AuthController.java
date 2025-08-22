@@ -3,6 +3,7 @@ package com.entrelibros.backend.auth;
 import com.entrelibros.backend.auth.dto.ApiResponse;
 import com.entrelibros.backend.auth.dto.LoginRequest;
 import com.entrelibros.backend.auth.dto.LoginResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -12,13 +13,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
-
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
+    @Value("${server.servlet.context-path:}")
+    private String contextPath;
 
     public AuthController(AuthService authService) {
         this.authService = authService;
@@ -27,10 +28,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Validated @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
-        ResponseCookie cookie = ResponseCookie.from("sessionToken", UUID.randomUUID().toString())
+        String cookiePath = contextPath.endsWith("/") ? contextPath + "auth" : contextPath + "/auth";
+        ResponseCookie cookie = ResponseCookie.from("sessionToken", response.getToken())
             .httpOnly(true)
             .secure(true)
-            .path("/api/v1/auth")
+            .path(cookiePath)
             .sameSite("Strict")
             .build();
         return ResponseEntity.ok()
