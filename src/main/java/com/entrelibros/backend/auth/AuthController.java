@@ -28,7 +28,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Validated @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
-        String cookiePath = contextPath.endsWith("/") ? contextPath + "auth" : contextPath + "/auth";
+        String normalizedContextPath = (contextPath == null || contextPath.isEmpty() || contextPath.equals("/")) ? "" : contextPath.replaceAll("/+$", "");
+        String cookiePath = normalizedContextPath + "/auth";
         ResponseCookie cookie = ResponseCookie.from("sessionToken", response.getToken())
             .httpOnly(true)
             .secure(true)
