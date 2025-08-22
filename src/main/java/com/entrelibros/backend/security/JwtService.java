@@ -22,7 +22,11 @@ public class JwtService {
     public JwtService(@Value("${jwt.secret}") String secret,
                       @Value("${jwt.accessTtl}") Duration accessTtl,
                       @Value("${jwt.issuer}") String issuer) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < 32) {
+            throw new IllegalArgumentException("JWT secret key must be at least 32 bytes (256 bits) for HMAC-SHA256.");
+        }
+        this.key = Keys.hmacShaKeyFor(secretBytes);
         this.accessTtl = accessTtl;
         this.issuer = issuer;
     }
