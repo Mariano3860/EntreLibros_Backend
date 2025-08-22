@@ -16,5 +16,5 @@ public class RestExceptionHandler {
         detail.setProperty("code", "InvalidCredentials");
         detail.setProperty("messageKey", "auth.errors.invalid_credentials");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(detail);
-        }
+    }
 }
