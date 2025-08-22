@@ -67,7 +67,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest();
         request.setEmail("user@entrelibros.com");
         request.setPassword("correcthorsebatterystaple");
-        mockMvc.perform(post("/auth/login").contextPath("/api/v1")
+        mockMvc.perform(post("/api/v1/auth/login").contextPath("/api/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -82,7 +82,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest();
         request.setEmail("user@entrelibros.com");
         request.setPassword("wrong");
-        mockMvc.perform(post("/auth/login").contextPath("/api/v1")
+        mockMvc.perform(post("/api/v1/auth/login").contextPath("/api/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnauthorized())
