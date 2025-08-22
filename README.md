@@ -6,7 +6,7 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
 
 - Java 21
 - Maven 3.9+
-- Docker (para ejecutar PostgreSQL y los tests)
+- Docker (opcional, para ejecutar PostgreSQL)
 
 ## Ejecutar en local
 
@@ -43,22 +43,6 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
 - Ejecutar pruebas: `mvn test`
 - Compilar sin pruebas: `mvn -DskipTests package`
 - Ver dependencias: `mvn dependency:tree`
-
-## Problemas comunes
-
-### Docker no disponible en tests
-
-Los tests usan Testcontainers para levantar PostgreSQL en un contenedor. Si al ejecutar `mvn test` aparece `IllegalState: Could not find a valid Docker environment`:
-
-1. Asegúrate de que Docker esté instalado y en ejecución:
-   ```bash
-   docker ps
-   ```
-2. En Linux, agrega tu usuario al grupo `docker` y reinicia sesión:
-   ```bash
-   sudo usermod -aG docker $USER
-   ```
-3. Si Docker no está disponible, salta las pruebas con `mvn -DskipTests test` o anota los tests con `@Testcontainers(disabledWithoutDocker = true)`.
 
 ## Documentación
 
