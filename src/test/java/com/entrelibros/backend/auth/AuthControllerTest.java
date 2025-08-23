@@ -13,10 +13,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
@@ -36,6 +36,7 @@ class AuthControllerTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.driverClassName", postgres::getDriverClassName);
         registry.add("JWT_SECRET", () -> "test-secret-0123456789abcdef0123456789abcd");
     }
 
@@ -67,7 +68,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest();
         request.setEmail("user@entrelibros.com");
         request.setPassword("correcthorsebatterystaple");
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login").contextPath("/api/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -82,7 +83,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest();
         request.setEmail("user@entrelibros.com");
         request.setPassword("wrong");
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login").contextPath("/api/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnauthorized())
