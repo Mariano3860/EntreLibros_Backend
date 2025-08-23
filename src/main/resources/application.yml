@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/entrelibros
     username: postgres
-    password: postgres
+    password: ${SQL_PASS:${spring.datasource.password}}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -18,6 +18,6 @@ spring:
     enabled: true
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:${jwt.secret}}
   issuer: "https://entrelibros.app"
   accessTtl: PT15M

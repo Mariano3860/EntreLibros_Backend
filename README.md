@@ -14,7 +14,7 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
    ```bash
    git clone <repo-url> && cd EntreLibros_Backend
    ```
-2. Configura las variables de entorno necesarias (ejemplo):
+2. Configura las variables de entorno necesarias (renombrar .env.example a .env):
    ```properties
    SERVER_PORT=4000
    DB_URL=jdbc:postgresql://localhost:5432/entrelibros
