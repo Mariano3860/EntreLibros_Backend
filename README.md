@@ -1,395 +1,49 @@
-# 📚 EntreLibros Backend (Spring Boot 3.x, Java 21)
-
-**API segura, moderna y con buenas prácticas** para la plataforma EntreLibros. Implementada con **Spring Boot 3.x (Java 21, virtual threads opcional)**, **Spring Security 6 (JWT + Refresh en cookie httpOnly)**, **PostgreSQL 16 + Flyway + Spring Data JPA**, contratos **OpenAPI 3** y **Testcontainers** para pruebas integradas. Logs estructurados, métricas con **Micrometer/Prometheus** y trazas **OpenTelemetry**.
-
-> **Nota de estilo**: el README está en español; **todo el código y los comentarios del código van en inglés** (preferencia del proyecto).
-
----
-
-## 🧱 Stack
-
-* **Runtime**: Java 21 (virtual threads habilitable con `spring.threads.virtual.enabled=true`)
-* **Framework**: Spring Boot 3.x (Web, Validation)
-* **Seguridad**: Spring Security 6 (OAuth2 Resource Server), JWT access + **refresh en cookie httpOnly/SameSite=strict**
-* **Persistencia**: PostgreSQL 16, Spring Data JPA (Hibernate), **Flyway** para migraciones
-* **Contratos**: springdoc-openapi (Swagger UI `/docs`), OpenAPI generado en build
-* **Mapper**: MapStruct
-* **Caching / Rate-limit**: Caffeine (local), Bucket4j (filtro) para protección básica
-* **Observabilidad**: Micrometer + Prometheus, OpenTelemetry OTLP, logs JSON (Logback) con `traceId`/`spanId`
-* **Testing**: JUnit 5, Testcontainers (Postgres), WebTestClient/MockMvc, AssertJ, Mockito
-* **Build**: Gradle (Kotlin DSL), Dockerfile multi-stage + Jib opcional
-
----
-
-## 🎯 Principios
-
-* **Contrato primero**: cualquier cambio en endpoints debe actualizar OpenAPI y pruebas de contrato.
-* **Seguridad por defecto**: mínimos privilegios, headers seguros, saneamiento y validación.
-* **Compatibilidad FE**: claves de i18n en errores (p.ej. `auth.errors.invalid_credentials`).
-* **Trazabilidad**: `X-Request-Id` → MDC → logs JSON + métricas por endpoint.
-
----
-
-## 🔐 Autenticación y sesión
-
-* **Login** devuelve `accessToken` (JWT corto, p.ej. 15 min) en el body **y** setea cookie `sessionToken` (refresh) **httpOnly, Secure, SameSite=Strict**, con rotación automática en `/auth/refresh` (interno).
-* **Logout** invalida el refresh server-side (lista de deny / token version) y expira la cookie.
-* **Protección**: CSRF no aplica a endpoints `stateless` con JWT; para formularios con cookie se añade **CSRF** si se habilita modo `session`.
-* **Hash** de contraseñas: **Argon2id** (`PasswordEncoder` de Spring Security).
-
----
-
-## 📡 API — Endpoints del MVP
-
-**Base URL:** `/api/v1`
-
-> Respuestas exitosas envuelven `{ "data": ..., "meta": { ... } }` cuando aplica. Errores siguen **RFC 9457 Problem Details** con extensiones `{ code, messageKey, details }` para i18n del FE.
-
-### 1) Autenticación
-
-#### `POST /auth/login`
-
-Inicia sesión de un usuario válido.
-
-**Request**
-
-```json
-{
-  "email": "user@entrelibros.com",
-  "password": "correcthorsebatterystaple"
-}
-```
-
-**200**
-
-```json
-{
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIs...",
-    "user": { "id": "1", "email": "user@entrelibros.com", "role": "user" },
-    "messageKey": "auth.success.login"
-  }
-}
-```
-
-Cabecera: `Set-Cookie: sessionToken=...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`
-
-**401**
-
-```json
-{
-  "type": "about:blank",
-  "title": "Unauthorized",
-  "status": 401,
-  "code": "InvalidCredentials",
-  "messageKey": "auth.errors.invalid_credentials"
-}
-```
-
-#### `POST /auth/logout`
-
-Requiere cookie `sessionToken` válida. Invalida refresh y expira cookie.
-
-**200**
-
-```json
-{ "data": { "message": "Successfully logged out", "timestamp": "2024-02-20T15:00:00Z" } }
-```
-
-#### `GET /auth/me`
-
-Devuelve el usuario autenticado (JWT `Authorization: Bearer <access>` **o** cookie `sessionToken` + refresh-flow server-side).
-
-**200**
-
-```json
-{ "data": { "id": "u_1", "email": "demo@entrelibros.app", "roles": ["user"] } }
-```
-
-**401** → Problem Details como arriba.
-
-#### `POST /auth/register`
-
-**Request**
-
-```json
-{ "name": "Jane Doe", "email": "new@entrelibros.com", "password": "secreta" }
-```
-
-**201**
-
-```json
-{
-  "data": {
-    "token": "fake-register-token",
-    "user": { "id": "2", "email": "new@entrelibros.com", "role": "user" },
-    "messageKey": "auth.success.register"
-  }
-}
-```
-
-**409**
-
-```json
-{
-  "type": "about:blank",
-  "title": "Conflict",
-  "status": 409,
-  "code": "EmailExists",
-  "messageKey": "auth.errors.email_exists"
-}
-```
-
----
-
-### 2) Formularios y contacto
-
-#### `POST /contact/submit`
-
-**Request**
-
-```json
-{ "name": "María Pérez", "email": "maria@example.com", "message": "Quisiera más información sobre la plataforma." }
-```
-
-**200**
-
-```json
-{ "data": { "message": "¡Gracias por tu mensaje! Te responderemos lo antes posible." } }
-```
-
-**400/500** → Problem Details con `messageKey` descriptivo.
-
-> **Implementación**: encolar evento `CONTACT_SUBMITTED` y enviar email (Mailpit en dev / SMTP/Resend en prod). Rate-limit por IP.
-
----
-
-### 3) Libros
-
-#### `GET /books`
-
-Lista pública (paginada) de libros.
-
-**200**
-
-```json
-{
-  "data": [
-    { "title": "1984", "author": "George Orwell", "coverUrl": "https://covers.openlibrary.org/b/id/7222246-L.jpg" }
-  ],
-  "meta": { "page": 0, "size": 20, "total": 1 }
-}
-```
-
-#### `GET /books/mine` (auth)
-
-Libros publicados por el usuario autenticado.
-
-**200**
-
-```json
-{
-  "data": [
-    {
-      "id": "1",
-      "title": "Matisse en Bélgica",
-      "author": "Carlos Argan",
-      "coverUrl": "https://covers.openlibrary.org/b/id/9875161-L.jpg",
-      "condition": "bueno",
-      "status": "available",
-      "isForSale": true,
-      "price": 15000
-    }
-  ]
-}
-```
-
----
-
-### 4) Comunidad
-
-#### `GET /community/stats`
-
-**200**
-
-```json
-{
-  "data": {
-    "kpis": { "exchanges": 134, "activeHouses": 52, "activeUsers": 318, "booksPublished": 2140 },
-    "trendExchanges": [65,80,55,90,70,40,85],
-    "trendNewBooks": [30,45,35,60,50,40,55]
-  }
-}
-```
-
-#### `GET /community/feed`
-
-Query params: `page` (default 0), `size` (default 8)
-
-**200**
-
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "user": "Ana",
-      "avatar": "https://example.com/avatar.png",
-      "time": "hace 2h",
-      "likes": 5,
-      "type": "book",
-      "title": "Dune",
-      "author": "Frank Herbert",
-      "cover": "https://picsum.photos/seed/1/600/400"
-    }
-  ],
-  "meta": { "page": 0, "size": 8, "total": 1 }
-}
-```
-
-#### `GET /community/activity`
-
-**200**
-
-```json
-{ "data": [ { "id": "uuid", "user": "Lucía", "avatar": "https://example.com/avatar.png" } ] }
-```
-
-#### `GET /community/suggestions`
-
-**200**
-
-```json
-{ "data": [ { "id": "uuid", "user": "Pedro", "avatar": "https://example.com/avatar.png" } ] }
-```
-
----
-
-## 🧩 Modelos básicos (concepto)
-
-* **User**: id, email (único), name, roles\[], passwordHash, language, createdAt
-* **Book**: id, title, author(s), coverUrl, tags\[]
-* **BookOwnership**: id, userId, bookId, condition, status, isForSale, price
-* **FeedItem**: id, type(`book|swap|sale|seeking`), payload(JSONB), createdAt
-* **ContactMessage**: id, name, email, message, createdAt
-
----
-
-## 🔧 Configuración
-
-Variables de entorno (validadas con `@ConfigurationProperties` + `jakarta.validation`):
-
-```properties
-SERVER_PORT=4000
-API_PREFIX=/api
-API_VERSION=v1
-CORS_ORIGINS=http://localhost:3000
-
-DB_URL=jdbc:postgresql://postgres:5432/entrelibros
-DB_USER=postgres
-DB_PASS=postgres
-
-JWT_ISSUER=https://entrelibros.app
-JWT_ACCESS_TTL=PT15M
-JWT_REFRESH_TTL=P14D
-JWT_ACCESS_PUBLIC_KEY=... # RS256 recomendado
-JWT_ACCESS_PRIVATE_KEY=...
-
-RATE_LIMIT_WINDOW=60s
-RATE_LIMIT_MAX=120
-```
-
----
-
-## 🐳 Docker / Dev
-
-* **PostgreSQL** + **Mailpit** en `docker-compose.dev.yml`.
-* Ejecutar app: `./gradlew bootRun` (o `java -jar` del jar empaquetado).
-* **Testcontainers** arranca Postgres aislado en tests: `./gradlew test`.
-
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: entrelibros
-    ports: ["5432:5432"]
-    volumes: ["db_data:/var/lib/postgresql/data"]
-  mailpit:
-    image: axllent/mailpit
-    ports: ["8025:8025", "1025:1025"]
-volumes:
-  db_data:
-```
-
----
-
-## 🔒 Buenas prácticas aplicadas
-
-* **JWT RS256** con rotación de refresh, cookie httpOnly/Secure/SameSite=Strict, `Path` limitado.
-* **Argon2id** para contraseñas; política de bloqueo por intentos fallidos.
-* **CORS** explícito por entorno; **Helmet-equivalente** en Spring Security (CSP, HSTS, X-Frame-Options, etc.).
-* **Validación** con Bean Validation + sanitización; límites de tamaño (`spring.servlet.multipart` y `maxPayloadSize`).
-* **Rate-limit** Bucket4j por IP/route; **circuit breakers** opcionales con Resilience4j.
-* **Observabilidad** out-of-the-box: `/actuator/health`, `/actuator/metrics`, trazas OTel.
-* **Migrations** con Flyway y `baselineOnMigrate=true` en entornos existentes.
-* **Zero-downtime**: `readiness/liveness` probes; **layered jar** para imágenes pequeñas.
-
----
-
-## 🧪 Pruebas
-
-* **Unitarias**: servicios, mappers, validaciones
-* **Integración**: repos + seguridad con Testcontainers
-* **E2E (contrato)**: WebTestClient contra contexto real y verificación OpenAPI
-* **Escenarios críticos**: login/logout, `/books/mine`, feed paginado, envío de contacto
-
----
-
-## 📄 Documentación OpenAPI
-
-* Swagger UI: `GET /docs`
-* OpenAPI JSON: `GET /docs/openapi.json` (se commitea en `docs/openapi.json`)
-
----
-
-## 🧷 Ejemplos de seguridad (headers)
-
-* `Strict-Transport-Security: max-age=31536000; includeSubDomains` (prod)
-* `Content-Security-Policy: default-src 'self'; img-src 'self' data: https://covers.openlibrary.org`
-* `X-Content-Type-Options: nosniff`
-* `X-Frame-Options: DENY`
-
----
-
-## ✅ Checklists de entrega
-
-* [ ] OpenAPI actualizado y publicado en `/docs`
-* [ ] Flyway migrations aplicadas en CI + entorno
-* [ ] `CORS_ORIGINS` correcto y pruebas de navegador OK
-* [ ] Rate-limit y logs JSON verificados (con `X-Request-Id`)
-* [ ] Tests verdes (unit/integration/e2e) con Testcontainers
-
----
-
-## 🤝 Contribución
-
-1. Branch `feat/<feature>`
-2. Añadí tests y actualizá OpenAPI si toca endpoints
-3. `./gradlew check` y calidad estática
-4. PR con descripción de contrato, riesgos y migración
-
----
-
-## 🔎 Notas de diseño
-
-* **Errores** usan Problem Details; el FE puede leer `code`/`messageKey` para i18n.
-* **Paginación**: endpoints públicos con `page/size` (compatibilidad actual del FE). En V1 considerar **cursor** donde corresponda.
-* **Contact**: asincronía por evento + email; dev: Mailpit, prod: SMTP/Resend.
-
----
-
-## 🧠 Decisiones (y qué descartamos)
-
-**Elegimos**: Spring Boot 3.x (Java 21), Security 6 con JWT + refresh cookie, Postgres + JPA/Flyway, OpenAPI springdoc, Testcontainers, Argon2id, Bucket4j y observabilidad OTel/Micrometer. **Descartamos**: NestJS/Node para este repo (duplicaba tipos y no cumple tu pedido de Spring), sesiones de servidor puras (preferimos JWT stateless + refresh cookie), y jOOQ por ahora (JPA suficiente en el MVP; jOOQ se evalúa para consultas complejas). **Criterio**: máxima seguridad/patrón actual de la industria, compatibilidad con tu FE y time-to-value rápido sin deuda innecesaria.
+# 📚 EntreLibros Backend
+
+Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
+
+## Requisitos
+
+- Java 21
+- Maven 3.9+
+- Docker (requerido para pruebas y bases de datos mediante Testcontainers)
+
+## Ejecutar en local
+
+1. Clona el repositorio:
+   ```bash
+   git clone <repo-url> && cd EntreLibros_Backend
+   ```
+2. Configura las variables de entorno necesarias (ejemplo):
+   ```properties
+   SERVER_PORT=4000
+   DB_URL=jdbc:postgresql://localhost:5432/entrelibros
+   DB_USER=postgres
+   DB_PASS=postgres
+   JWT_ISSUER=https://entrelibros.app
+   JWT_ACCESS_TTL=PT15M
+   JWT_REFRESH_TTL=P14D
+   ```
+3. Levanta PostgreSQL (por ejemplo con Docker):
+   ```bash
+   docker run --name entrelibros-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=entrelibros -p 5432:5432 -d postgres:16-alpine
+   ```
+4. Ejecuta la aplicación:
+   ```bash
+   mvn spring-boot:run
+   ```
+   o bien empaqueta y ejecuta el jar:
+   ```bash
+   mvn clean package
+   java -jar target/entrelibros-backend-0.0.1-SNAPSHOT.jar
+   ```
+
+## Comandos útiles
+
+- Ejecutar pruebas (requiere Docker): `mvn test`
+- Compilar sin pruebas: `mvn -DskipTests package`
+- Ver dependencias: `mvn dependency:tree`
+
+## Documentación
+
+La documentación completa y los endpoints están en la carpeta [docs](docs/).
