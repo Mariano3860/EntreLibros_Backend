@@ -20,10 +20,12 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
    DB_URL=jdbc:postgresql://localhost:5432/entrelibros
    DB_USER=postgres
    DB_PASS=postgres
+   JWT_SECRET=super-secret-0123456789abcdef0123456789abcd
    JWT_ISSUER=https://entrelibros.app
    JWT_ACCESS_TTL=PT15M
    JWT_REFRESH_TTL=P14D
    ```
+   `JWT_SECRET` es obligatorio y debe tener al menos 32 bytes.
 3. Levanta PostgreSQL (por ejemplo con Docker):
    ```bash
    docker run --name entrelibros-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=entrelibros -p 5432:5432 -d postgres:16-alpine

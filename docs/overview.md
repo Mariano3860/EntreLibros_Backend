@@ -60,12 +60,15 @@ DB_PASS=postgres
 JWT_ISSUER=https://entrelibros.app
 JWT_ACCESS_TTL=PT15M
 JWT_REFRESH_TTL=P14D
+JWT_SECRET=super-secret-0123456789abcdef0123456789abcd
 JWT_ACCESS_PUBLIC_KEY=... # RS256 recomendado
 JWT_ACCESS_PRIVATE_KEY=...
 
 RATE_LIMIT_WINDOW=60s
 RATE_LIMIT_MAX=120
 ```
+
+`JWT_SECRET` es obligatorio y debe tener al menos 32 bytes.
 
 ---
 
