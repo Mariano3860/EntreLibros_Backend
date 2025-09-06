@@ -19,12 +19,15 @@ public class JwtService {
     private final Duration accessTtl;
     private final String issuer;
 
-    public JwtService(@Value("${jwt.secret}") String secret,
+    public JwtService(@Value("${jwt.secret:}") String secret,
                       @Value("${jwt.accessTtl}") Duration accessTtl,
                       @Value("${jwt.issuer}") String issuer) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET must be defined and contain at least 32 bytes.");
+        }
         byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (secretBytes.length < 32) {
-            throw new IllegalArgumentException("JWT secret key must be at least 32 bytes (256 bits) for HMAC-SHA256.");
+            throw new IllegalStateException("JWT_SECRET must be at least 32 bytes (256 bits) for HMAC-SHA256.");
         }
         this.key = Keys.hmacShaKeyFor(secretBytes);
         this.accessTtl = accessTtl;

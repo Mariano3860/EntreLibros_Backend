@@ -1,0 +1,21 @@
+# src/test/resources/application-test.yml
+spring:
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    # One URL -> one container per JVM. Keep this EXACT string across all tests.
+    url: jdbc:tc:postgresql:16-alpine:///testdb?TC_DAEMON=true&TC_REUSABLE=true
+    username: postgres      # ignored by jdbc:tc, but Spring likes them present
+    password: postgres  # ignored by jdbc:tc, but Spring likes them present
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+
+jwt:
+  secret: "test-secret-0123456789abcdef0123456789abcd"
+  issuer: "https://entrelibros.app"
+  accessTtl: PT15M

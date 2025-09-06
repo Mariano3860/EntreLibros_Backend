@@ -9,13 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
@@ -27,18 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 class AuthControllerTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @DynamicPropertySource
-    static void overrideProps(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.driverClassName", postgres::getDriverClassName);
-        registry.add("JWT_SECRET", () -> "test-secret-0123456789abcdef0123456789abcd");
-    }
 
     @Autowired
     MockMvc mockMvc;
@@ -73,9 +57,9 @@ class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
             .andExpect(header().stringValues("Set-Cookie", org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("sessionToken"))))
-            .andExpect(jsonPath("$.data.token").isNotEmpty())
-            .andExpect(jsonPath("$.data.user.email").value("user@entrelibros.com"))
-            .andExpect(jsonPath("$.data.messageKey").value("auth.success.login"));
+            .andExpect(jsonPath("$.token").isNotEmpty())
+            .andExpect(jsonPath("$.user.email").value("user@entrelibros.com"))
+            .andExpect(jsonPath("$.messageKey").value("auth.success.login"));
     }
 
     @Test
