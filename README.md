@@ -46,6 +46,19 @@ Backend de la plataforma EntreLibros construido con Spring Boot 3 y Java 21.
 - Compilar sin pruebas: `mvn -DskipTests package`
 - Ver dependencias: `mvn dependency:tree`
 
+## Ejecución en entornos sin internet
+
+1. En una máquina con acceso a internet, descarga todas las dependencias:
+   ```bash
+   mvn dependency:go-offline
+   docker pull postgres:16-alpine
+   ```
+2. Copia el directorio `~/.m2/repository` y las imágenes de Docker al entorno sin red.
+3. Ejecuta las pruebas usando solo los artefactos en caché:
+   ```bash
+   mvn -o test
+   ```
+
 ## Documentación
 
 La documentación completa y los endpoints están en la carpeta [docs](docs/).
