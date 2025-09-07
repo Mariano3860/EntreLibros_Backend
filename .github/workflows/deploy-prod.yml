@@ -1,0 +1,33 @@
+name: Deploy to Prod
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: entrelibros-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+      - name: Build with Maven
+        run: mvn -B package
+      - name: Log in to registry
+        run: |
+          echo "${{ secrets.PROD_REGISTRY_PASSWORD }}" | docker login ${{ secrets.PROD_REGISTRY }} -u ${{ secrets.PROD_REGISTRY_USERNAME }} --password-stdin
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.PROD_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+      - name: Push Docker image
+        run: docker push ${{ secrets.PROD_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Deploy
+        run: ${{ secrets.PROD_DEPLOY_CMD }}
